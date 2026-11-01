@@ -1,36 +1,40 @@
-# =====================================================================
-# Safe Cyberpunk 2077 Mod Cleaner v1.0
-# Copyright (c) 2026 MCR777
-# Licensed under MIT License
-# =====================================================================
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title Safe Cyberpunk 2077 Mod Cleaner v1.0
-color 0B
+
+title Safe Cyberpunk 2077 Mod Cleaner v1.1
+color 0E
 
 set "SCRIPT_DIR=%~dp0"
 set "PS_SCRIPT=%SCRIPT_DIR%Safe_Mod_Cleaner.ps1"
 set "JSON_FILE=%SCRIPT_DIR%Cyberpunk_clean.json"
 set "GEN_SCRIPT=%SCRIPT_DIR%New-CleanManifest.ps1"
 
+REM ============================================================
+REM Pre-checks
+REM ============================================================
+
 where powershell >nul 2>nul
 if errorlevel 1 (
-    echo [ERROR] PowerShell was not found.
-    pause
-    exit /b 1
-)
-if not exist "%PS_SCRIPT%" (
-    echo [ERROR] Safe_Mod_Cleaner.ps1 is missing in folder:
-    echo   %PS_SCRIPT%
-    pause
-    exit /b 1
-)
-if not exist "%JSON_FILE%" (
-    echo [WARNING] Cyberpunk_clean.json is missing.
-    echo   Please run New-CleanManifest.ps1 first (menu option 7)
-    echo   or place the file manually in this folder.
     echo.
+    echo   [!] CRITICAL: PowerShell runtime not found.
+    echo       System cannot initialize cyberdeck interface.
+    echo.
+    pause
+    exit /b 1
 )
+
+if not exist "%PS_SCRIPT%" (
+    echo.
+    echo   [!] CRITICAL: Core module missing.
+    echo       Path: %PS_SCRIPT%
+    echo.
+    pause
+    exit /b 1
+)
+
+REM ============================================================
+REM Determine target path
+REM ============================================================
 
 if "%~1"=="" (
     for %%I in ("%~dp0.") do set "GAME_PATH=%%~fI"
@@ -38,110 +42,190 @@ if "%~1"=="" (
     for %%I in ("%~1.") do set "GAME_PATH=%%~fI"
 )
 
+REM ============================================================
+REM CYBERPUNK MENU
+REM ============================================================
+
 :MENU
 cls
 echo.
-echo  ================================================================
-echo   Safe Cyberpunk 2077 Mod Cleaner v1.0
-echo  ================================================================
-echo   Target folder: %GAME_PATH%
-echo  ----------------------------------------------------------------
+echo   =================================================================
+echo        SAFE CYBERPUNK 2077 MOD CLEANER  //  v1.1
+echo        [ CYBERDECK INTERFACE ]
+echo   =================================================================
 echo.
-echo   [1]  Analyze                  Show only, no changes
-echo   [2]  Dry-Run                  Simulates Reset
-echo   [3]  RESET TO VANILLA         Removes all mods, auto-repairs
-echo                                 cache/config from snapshot
-echo   [4]  NUCLEAR OPTION           Full reset + force vanilla
-echo                                 cache/config (no GOG verify needed)
-echo   [5]  List Backups             Show all available backups
-echo   [6]  Restore                  Restore from backup
-echo   [7]  Create Vanilla Manifest  (Generator)
-echo   [8]  Recreate Snapshot        Recreate Vanilla Snapshot
-echo   [0]  Exit
+echo   TARGET: %GAME_PATH%
+echo   -----------------------------------------------------------------
 echo.
-echo  ----------------------------------------------------------------
-echo   Advanced usage:
-echo     Safe_Mod_Cleaner.bat "C:\Path\to\Game"
-echo  ================================================================
+echo   [1] // SCAN_SYSTEM        - Analyze installation (safe, no changes)
+echo   [2] // SIMULATE_BREACH    - Dry-run: preview what would be removed
+echo   [3] // RESET_TO_VANILLA   - Full reset, auto-repair cache/config
+echo   [4] // LIST_ARCHIVES      - Show all available backups
+echo   [5] // RESTORE_BACKUP     - Restore mods from backup
+echo   [6] // GEN_MANIFEST       - Create whitelist + initial snapshot
+echo   [7] // REBUILD_SNAPSHOT   - Recreate vanilla cache/config snapshot
+echo   [0] // JACK_OUT           - Exit cyberdeck
 echo.
-set "CHOICE="
-set /p CHOICE="  Selection (0-8): "
+echo   -----------------------------------------------------------------
+echo.
 
-if "%CHOICE%"=="1" goto OPT_1
-if "%CHOICE%"=="2" goto OPT_2
-if "%CHOICE%"=="3" goto OPT_3
-if "%CHOICE%"=="4" goto OPT_4
-if "%CHOICE%"=="5" goto OPT_5
-if "%CHOICE%"=="6" goto OPT_6
-if "%CHOICE%"=="7" goto OPT_7
-if "%CHOICE%"=="8" goto OPT_8
+if not exist "%JSON_FILE%" (
+    echo   [!] WARNING: Cyberpunk_clean.json not detected.
+    echo       Run option [6] GEN_MANIFEST first to initialize whitelist.
+    echo.
+)
+
+set "CHOICE="
+set /p CHOICE="   root@cyberdeck:~# "
+
+if "%CHOICE%"=="1" goto OPT_SCAN
+if "%CHOICE%"=="2" goto OPT_DRYRUN
+if "%CHOICE%"=="3" goto OPT_RESET
+if "%CHOICE%"=="4" goto OPT_LIST
+if "%CHOICE%"=="5" goto OPT_RESTORE
+if "%CHOICE%"=="6" goto OPT_GEN_MANIFEST
+if "%CHOICE%"=="7" goto OPT_REBUILD_SNAPSHOT
 if "%CHOICE%"=="0" goto END
+
 echo.
-echo  [!] Invalid selection.
+echo   [!] INVALID COMMAND - Access denied.
 timeout /t 2 >nul
 goto MENU
 
-:OPT_1
+REM ============================================================
+REM Operations
+REM ============================================================
+
+:OPT_SCAN
+cls
+echo.
+echo   =================================================================
+echo   [01] SCAN_SYSTEM - Analyzing installation...
+echo   =================================================================
+echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -CompareOnly
 goto AFTER
 
-:OPT_2
+:OPT_DRYRUN
+cls
+echo.
+echo   =================================================================
+echo   [02] SIMULATE_BREACH - Previewing removal targets...
+echo   =================================================================
+echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -DryRun
 goto AFTER
 
-:OPT_3
+:OPT_RESET
+cls
+echo.
+echo   =================================================================
+echo   [03] RESET_TO_VANILLA
+echo   =================================================================
+echo.
+echo   This operation will:
+echo     - Move all non-whitelisted files to a secure backup
+echo     - Force cache/config back to vanilla state
+echo     - Restore protected vanilla files from snapshot
+echo.
+echo   All vanilla files are protected by whitelist.
+echo   -----------------------------------------------------------------
+echo.
+set /p CONFIRM="   Confirm operation? [Y/N]: "
+if /i not "%CONFIRM%"=="Y" goto MENU
+echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%"
 goto AFTER
 
-:OPT_4
+:OPT_LIST
+cls
 echo.
-echo  ======================================================================
-echo   You have selected the NUCLEAR OPTION.
-echo   This will force-reset ALL files to vanilla state.
-echo   No GOG/Steam Verify needed - snapshot restores everything!
-echo  ======================================================================
+echo   =================================================================
+echo   [04] LIST_ARCHIVES - Retrieving backup catalog...
+echo   =================================================================
 echo.
-set /p CONFIRM="  Really proceed? (Y/N): "
-if /i not "%CONFIRM%"=="Y" goto MENU
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -NuclearOption
-goto AFTER
-
-:OPT_5
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -ListBackups
 goto AFTER
 
-:OPT_6
+:OPT_RESTORE
+cls
+echo.
+echo   =================================================================
+echo   [05] RESTORE_BACKUP - Initiating restore protocol...
+echo   =================================================================
+echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -Restore
 goto AFTER
 
-:OPT_7
+:OPT_GEN_MANIFEST
+cls
 if not exist "%GEN_SCRIPT%" (
     echo.
-    echo  [ERROR] New-CleanManifest.ps1 is missing:
-    echo    %GEN_SCRIPT%
+    echo   [!] CRITICAL: Generator module not found.
+    echo       Path: %GEN_SCRIPT%
+    echo.
     pause
     goto MENU
 )
+
+echo.
+echo   =================================================================
+echo   [06] GEN_MANIFEST - Initializing whitelist generator...
+echo   =================================================================
+echo.
+echo   This operation will:
+echo     - Create Cyberpunk_clean.json from the current installation
+echo     - Create the vanilla snapshot afterwards
+echo.
+echo   CRITICAL: Game must be in CLEAN VANILLA state!
+echo   Run GOG/Steam Verify BEFORE executing this operation.
+echo   -----------------------------------------------------------------
+echo.
+set /p CONFIRM="   Continue? [Y/N]: "
+if /i not "%CONFIRM%"=="Y" goto MENU
+echo.
+
 powershell -NoProfile -ExecutionPolicy Bypass -File "%GEN_SCRIPT%" -GamePath "%GAME_PATH%"
+if errorlevel 1 goto AFTER
+
+echo.
+echo   Creating initial vanilla snapshot...
+echo.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -RebuildSnapshotOnly -Yes
 goto AFTER
 
-:OPT_8
+:OPT_REBUILD_SNAPSHOT
+cls
 echo.
-echo  [!] Snapshot will be recreated.
-echo      Make sure the game is VANILLA (no active mods).
+echo   =================================================================
+echo   [07] REBUILD_SNAPSHOT
+echo   =================================================================
 echo.
-set /p CONFIRM="  Continue? (Y/N): "
+echo   WARNING: Game must be in CLEAN VANILLA state!
+echo   This will overwrite the existing vanilla snapshot.
+echo   -----------------------------------------------------------------
+echo.
+set /p CONFIRM="   Confirm rebuild? [Y/N]: "
 if /i not "%CONFIRM%"=="Y" goto MENU
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -CompareOnly -ForceResnap
+echo.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" -GamePath "%GAME_PATH%" -RebuildSnapshotOnly -Yes
 goto AFTER
 
 :AFTER
 echo.
-echo  ---------------------------------------------------------------
-set /p BACK="  Return to menu? (Y/N): "
+echo   -----------------------------------------------------------------
+echo.
+set /p BACK="   Return to main menu? [Y/N]: "
 if /i "%BACK%"=="Y" goto MENU
 goto END
 
 :END
+cls
+echo.
+echo   =================================================================
+echo        [ CONNECTION TERMINATED ]
+echo        [ CYBERDECK OFFLINE ]
+echo   =================================================================
+echo.
 endlocal
 exit /b 0
