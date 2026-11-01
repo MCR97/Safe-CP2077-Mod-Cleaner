@@ -37,6 +37,11 @@ Unlike conventional cleaners that delete files or rely on static blacklist rules
 
 ## 🚀 Quick Start Guide
 
+> [!IMPORTANT]
+> **A clean install of Cyberpunk 2077 is strictly required** before using this tool or setting up new mods! Leftover files from previous mods (e.g., CET, REDscript, RED4ext, or ArchiveXL) will remain in your game directory and cause crashes or script errors. Please uninstall the game, manually delete all remaining files in the installation directory as well as in `%localappdata%\CD Projekt Red\Cyberpunk 2077`, and perform a fresh reinstall.
+
+---
+
 ### Installation
 1. Download the latest release.
 2. Extract all contents directly into your **Cyberpunk 2077 main game directory** (e.g., `C:\Program Files (x86)\Steam\steamapps\common\Cyberpunk 2077\`).
